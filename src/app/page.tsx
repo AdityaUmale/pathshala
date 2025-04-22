@@ -52,7 +52,7 @@ export default function LandingPage() {
           </nav>
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" className="rounded-full" asChild>
-              <Link href="/login">Log In</Link>
+              <Link href="/signin">Log In</Link>
             </Button>
             <Button
               size="sm"
@@ -344,7 +344,7 @@ export default function LandingPage() {
                     Ready to Transform Your Educational Experience?
                   </h2>
                   <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                    Join thousands of educators and students already using Pathshala. It's completely free!
+                    Join thousands of educators and students already using Pathshala. Its completely free!
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
