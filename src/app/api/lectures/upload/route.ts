@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import connectDB from "../../../../lib/db";
-import Lecture from "../../../../lib/models/Lecture";
+import connectDB from "@/lib/db";
+import Lecture from "@/lib/models/Lecture";
+import { writeFile } from 'fs/promises';
+import path from 'path';
 
 export async function POST(req: Request) {
   try {
@@ -11,9 +13,19 @@ export async function POST(req: Request) {
     const description = formData.get("description") as string;
     const video = formData.get("video") as File;
 
-    // For now, storing just a placeholder URL
-    // In production, you'd upload to a cloud service
-    const videoUrl = "/videos/" + video.name;
+    // Create unique filename
+    const bytes = new Uint8Array(8);
+    crypto.getRandomValues(bytes);
+    const uniqueSuffix = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    const fileName = `${uniqueSuffix}-${video.name}`;
+
+    // Save video to public directory
+    const videoBuf = await video.arrayBuffer();
+    const videoPath = path.join(process.cwd(), 'public', 'uploads', 'videos', fileName);
+    await writeFile(videoPath, Buffer.from(videoBuf));
+
+    // Save video URL in database
+    const videoUrl = `/uploads/videos/${fileName}`;
 
     const lecture = await Lecture.create({
       title,
@@ -29,6 +41,7 @@ export async function POST(req: Request) {
     }, { status: 201 });
 
   } catch (error) {
+    console.error('Upload error:', error);
     return NextResponse.json({
       success: false,
       error: "Failed to create lecture",
