@@ -12,8 +12,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Video, FileText, Bell, AlertTriangle } from "lucide-react";
+import { Upload, Video, FileText, Bell, AlertTriangle, Calendar, CheckCircle, XCircle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+
+// Mock student data (replace with actual data from your database)
+const MOCK_STUDENTS = Array.from({ length: 40 }, (_, i) => ({
+  studentId: `student-${i + 1}`,
+  studentName: `Student ${i + 1}`,
+}));
 
 export default function AdminPage() {
   const [title, setTitle] = useState("");
@@ -25,6 +33,16 @@ export default function AdminPage() {
   const [announcementTitle, setAnnouncementTitle] = useState("");
   const [announcementDescription, setAnnouncementDescription] = useState("");
   const [isImportant, setIsImportant] = useState(false);
+  
+  // New state variables for attendance
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [attendanceData, setAttendanceData] = useState<Array<{
+    studentId: string;
+    studentName: string;
+    present: boolean;
+  }>>(MOCK_STUDENTS.map(student => ({ ...student, present: false })));
+  const [isLoading, setIsLoading] = useState(false);
+  const [attendanceLoaded, setAttendanceLoaded] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,6 +138,102 @@ export default function AdminPage() {
     } catch (error) {
       console.error("Announcement error:", error);
       // You can add an error notification here
+    }
+  };
+
+  // New function to fetch attendance for a selected date
+  const fetchAttendanceForDate = async (date: Date) => {
+    if (!date) return;
+    
+    setIsLoading(true);
+    try {
+      const formattedDate = format(date, "yyyy-MM-dd");
+      const response = await fetch(`/api/attendance?date=${formattedDate}`);
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch attendance");
+      }
+      
+      const data = await response.json();
+      
+      if (data.attendance) {
+        // If attendance exists for this date, load it
+        setAttendanceData(data.attendance.students);
+      } else {
+        // Otherwise, reset to default (all absent)
+        setAttendanceData(MOCK_STUDENTS.map(student => ({ ...student, present: false })));
+      }
+      
+      setAttendanceLoaded(true);
+    } catch (error) {
+      console.error("Error fetching attendance:", error);
+      // Reset to default
+      setAttendanceData(MOCK_STUDENTS.map(student => ({ ...student, present: false })));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle date change in calendar
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    if (date) {
+      fetchAttendanceForDate(date);
+    }
+  };
+
+  // Toggle attendance for a student
+  const toggleAttendance = (studentId: string) => {
+    setAttendanceData(prev => 
+      prev.map(student => 
+        student.studentId === studentId 
+          ? { ...student, present: !student.present } 
+          : student
+      )
+    );
+  };
+
+  // Mark all students present
+  const markAllPresent = () => {
+    setAttendanceData(prev => 
+      prev.map(student => ({ ...student, present: true }))
+    );
+  };
+
+  // Mark all students absent
+  const markAllAbsent = () => {
+    setAttendanceData(prev => 
+      prev.map(student => ({ ...student, present: false }))
+    );
+  };
+
+  // Submit attendance
+  const submitAttendance = async () => {
+    if (!selectedDate) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/attendance", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          date: selectedDate,
+          students: attendanceData,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to submit attendance");
+      }
+      
+      // Success notification could be added here
+    } catch (error) {
+      console.error("Error submitting attendance:", error);
+      // Error notification could be added here
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -311,6 +425,87 @@ export default function AdminPage() {
                     Publish Announcement
                   </Button>
                 </form>
+              </DialogContent>
+            </Dialog>
+
+            {/* New attendance button */}
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="bg-green-600 hover:bg-green-700 text-white">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Mark Attendance
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[700px]">
+                <DialogHeader>
+                  <DialogTitle>Mark Student Attendance</DialogTitle>
+                </DialogHeader>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <Label>Select Date</Label>
+                    <CalendarComponent
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={handleDateSelect}
+                      className="border rounded-md"
+                    />
+                    <div className="mt-4 space-y-2">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        className="w-full" 
+                        onClick={markAllPresent}
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+                        Mark All Present
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        className="w-full" 
+                        onClick={markAllAbsent}
+                      >
+                        <XCircle className="w-4 h-4 mr-2 text-red-500" />
+                        Mark All Absent
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="max-h-[400px] overflow-y-auto pr-2">
+                    <Label className="mb-2 block">Students</Label>
+                    {isLoading ? (
+                      <div className="flex justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {attendanceData.map((student) => (
+                          <div 
+                            key={student.studentId} 
+                            className="flex items-center justify-between p-2 border rounded-md"
+                          >
+                            <span>{student.studentName}</span>
+                            <div className="flex items-center">
+                              <span className={`mr-2 text-sm ${student.present ? 'text-green-500' : 'text-red-500'}`}>
+                                {student.present ? 'Present' : 'Absent'}
+                              </span>
+                              <Checkbox 
+                                checked={student.present}
+                                onCheckedChange={() => toggleAttendance(student.studentId)}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <Button 
+                  className="w-full mt-6 bg-green-600 hover:bg-green-700"
+                  onClick={submitAttendance}
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Saving...' : 'Save Attendance'}
+                </Button>
               </DialogContent>
             </Dialog>
           </div>
