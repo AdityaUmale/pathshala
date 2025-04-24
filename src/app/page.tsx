@@ -155,7 +155,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5, duration: 0.5 }}>
               <Button variant="ghost" size="sm" className="rounded-full" asChild>
-                <Link href="/login">Log In</Link>
+                <Link href="/signin">Log In</Link>
               </Button>
             </motion.div>
             <motion.div

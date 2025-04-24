@@ -12,7 +12,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Video, FileText } from "lucide-react";
+import { Upload, Video, FileText, Bell, AlertTriangle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function AdminPage() {
   const [title, setTitle] = useState("");
@@ -21,6 +22,9 @@ export default function AdminPage() {
   const [materialTitle, setMaterialTitle] = useState("");
   const [materialDescription, setMaterialDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [announcementTitle, setAnnouncementTitle] = useState("");
+  const [announcementDescription, setAnnouncementDescription] = useState("");
+  const [isImportant, setIsImportant] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,6 +86,39 @@ export default function AdminPage() {
       // You can add a success notification here
     } catch (error) {
       console.error("Upload error:", error);
+      // You can add an error notification here
+    }
+  };
+
+  // New function to handle announcement submission
+  const handleAnnouncementSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const response = await fetch("/api/announcement", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: announcementTitle,
+          description: announcementDescription,
+          important: isImportant,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create announcement");
+      }
+
+      // Reset form
+      setAnnouncementTitle("");
+      setAnnouncementDescription("");
+      setIsImportant(false);
+      
+      // You can add a success notification here
+    } catch (error) {
+      console.error("Announcement error:", error);
       // You can add an error notification here
     }
   };
@@ -213,6 +250,65 @@ export default function AdminPage() {
 
                   <Button type="submit" className="w-full bg-cyan-600 hover:bg-cyan-700">
                     Upload Material
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="bg-amber-600 hover:bg-amber-700 text-white">
+                  <Bell className="w-4 h-4 mr-2" />
+                  Add Announcement
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Create New Announcement</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleAnnouncementSubmit} className="space-y-6 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="announcementTitle">Announcement Title</Label>
+                    <Input
+                      id="announcementTitle"
+                      value={announcementTitle}
+                      onChange={(e) => setAnnouncementTitle(e.target.value)}
+                      placeholder="Enter announcement title"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="announcementDescription">Announcement Content</Label>
+                    <Textarea
+                      id="announcementDescription"
+                      value={announcementDescription}
+                      onChange={(e) => setAnnouncementDescription(e.target.value)}
+                      placeholder="Enter announcement content"
+                      className="min-h-[150px]"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="important" 
+                      checked={isImportant}
+                      onCheckedChange={(checked) => setIsImportant(checked === true)}
+                    />
+                    <div className="grid gap-1.5 leading-none">
+                      <Label 
+                        htmlFor="important" 
+                        className="flex items-center text-sm font-medium leading-none gap-1"
+                      >
+                        <AlertTriangle className="h-4 w-4 text-red-500" />
+                        Mark as important
+                      </Label>
+                    </div>
+                  </div>
+
+                  <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700">
+                    Publish Announcement
                   </Button>
                 </form>
               </DialogContent>
