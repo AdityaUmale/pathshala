@@ -20,5 +20,6 @@ export async function GET() {
       success: false,
       error: "Failed to fetch lectures",
     }, { status: 500 });
+    console.log(error);
   }
 }
