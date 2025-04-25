@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,6 +25,12 @@ const MOCK_STUDENTS = Array.from({ length: 40 }, (_, i) => ({
 }));
 
 export default function AdminPage() {
+  const router = useRouter();
+  
+  // Move ALL state declarations to the top level
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [video, setVideo] = useState<File | null>(null);
@@ -33,17 +40,56 @@ export default function AdminPage() {
   const [announcementTitle, setAnnouncementTitle] = useState("");
   const [announcementDescription, setAnnouncementDescription] = useState("");
   const [isImportant, setIsImportant] = useState(false);
-  
-  // New state variables for attendance
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [attendanceData, setAttendanceData] = useState<Array<{
     studentId: string;
     studentName: string;
     present: boolean;
   }>>(MOCK_STUDENTS.map(student => ({ ...student, present: false })));
-  const [isLoading, setIsLoading] = useState(false);
   const [attendanceLoaded, setAttendanceLoaded] = useState(false);
-
+  
+  // Check if user is admin
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.user && data.user.role === 'admin') {
+            setIsAuthorized(true);
+          } else {
+            // Redirect non-admin users
+            router.replace('/dashboard');
+          }
+        } else {
+          // Redirect unauthenticated users
+          router.replace('/signin');
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+        router.replace('/signin');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    checkAuth();
+  }, [router]);
+  
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
+  // If not authorized, don't render the page content
+  if (!isAuthorized) {
+    return null;
+  }
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -145,7 +191,7 @@ export default function AdminPage() {
   const fetchAttendanceForDate = async (date: Date) => {
     if (!date) return;
     
-    setIsLoading(true);
+    setIsSubmitting(true); // Use isSubmitting instead of isLoading
     try {
       const formattedDate = format(date, "yyyy-MM-dd");
       const response = await fetch(`/api/attendance?date=${formattedDate}`);
@@ -170,7 +216,7 @@ export default function AdminPage() {
       // Reset to default
       setAttendanceData(MOCK_STUDENTS.map(student => ({ ...student, present: false })));
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false); // Use isSubmitting instead of isLoading
     }
   };
 
@@ -211,7 +257,7 @@ export default function AdminPage() {
   const submitAttendance = async () => {
     if (!selectedDate) return;
     
-    setIsLoading(true);
+    setIsSubmitting(true); // Use isSubmitting instead of isLoading
     try {
       const response = await fetch("/api/attendance", {
         method: "POST",
@@ -233,7 +279,7 @@ export default function AdminPage() {
       console.error("Error submitting attendance:", error);
       // Error notification could be added here
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false); // Use isSubmitting instead of isLoading
     }
   };
 
@@ -502,9 +548,9 @@ export default function AdminPage() {
                 <Button 
                   className="w-full mt-6 bg-green-600 hover:bg-green-700"
                   onClick={submitAttendance}
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                 >
-                  {isLoading ? 'Saving...' : 'Save Attendance'}
+                  {isSubmitting ? 'Saving...' : 'Save Attendance'}
                 </Button>
               </DialogContent>
             </Dialog>
