@@ -13,6 +13,12 @@ const lectureSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  semester: {
+    type: Number,
+    required: true,
+    min: 1,
+    max: 8,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

@@ -48,6 +48,7 @@ export default function AdminPage() {
     present: boolean;
   }>>(MOCK_STUDENTS.map(student => ({ ...student, present: false })));
   const [attendanceLoaded, setAttendanceLoaded] = useState(false);
+  const [semester, setSemester] = useState("1"); // Add this new state
   
   // Check if user is admin
   useEffect(() => {
@@ -108,6 +109,7 @@ export default function AdminPage() {
     const formData = new FormData();
     formData.append("title", title);
     formData.append("description", description);
+    formData.append("semester", semester); // Add semester to form data
     if (video) {
       formData.append("video", video);
     }
@@ -126,11 +128,13 @@ export default function AdminPage() {
       setTitle("");
       setDescription("");
       setVideo(null);
+      setSemester("1"); // Reset semester
       
-      // You can add a success notification here
+      // Add success notification
+      toast.success("Lecture uploaded successfully");
     } catch (error) {
       console.error("Upload error:", error);
-      // You can add an error notification here
+      toast.error("Failed to upload lecture");
     }
   };
 
@@ -333,6 +337,24 @@ export default function AdminPage() {
                       placeholder="Enter lecture description"
                       required
                     />
+                  </div>
+                  
+                  {/* Add semester selector */}
+                  <div className="space-y-2">
+                    <Label htmlFor="semester">Semester</Label>
+                    <select
+                      id="semester"
+                      value={semester}
+                      onChange={(e) => setSemester(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      required
+                    >
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                        <option key={sem} value={sem}>
+                          Semester {sem}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="space-y-2">

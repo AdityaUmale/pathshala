@@ -12,6 +12,15 @@ export async function POST(req: Request) {
     const title = formData.get("title") as string;
     const description = formData.get("description") as string;
     const video = formData.get("video") as File;
+    const semester = parseInt(formData.get("semester") as string);
+
+    // Validate semester
+    if (isNaN(semester) || semester < 1 || semester > 8) {
+      return NextResponse.json({
+        success: false,
+        error: "Semester must be a number between 1 and 8",
+      }, { status: 400 });
+    }
 
     // Create unique filename
     const bytes = new Uint8Array(8);
@@ -31,6 +40,7 @@ export async function POST(req: Request) {
       title,
       description,
       videoUrl,
+      semester,
       createdAt: new Date(),
       updatedAt: new Date(),
     });

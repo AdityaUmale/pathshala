@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 interface Lecture {
   _id: string;
   title: string;
   description: string;
   videoUrl: string;
+  semester: number;
   createdAt: string;
 }
 
@@ -15,11 +17,16 @@ export default function LecturesPage() {
   const [lectures, setLectures] = useState<Lecture[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedSemester, setSelectedSemester] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchLectures() {
       try {
-        const response = await fetch("/api/lectures");
+        const url = selectedSemester 
+          ? `/api/lectures?semester=${selectedSemester}` 
+          : "/api/lectures";
+          
+        const response = await fetch(url);
         if (!response.ok) {
           throw new Error("Failed to fetch lectures");
         }
@@ -34,7 +41,12 @@ export default function LecturesPage() {
     }
 
     fetchLectures();
-  }, []);
+  }, [selectedSemester]);
+
+  const handleSemesterChange = (semester: string | null) => {
+    setSelectedSemester(semester);
+    setLoading(true);
+  };
 
   if (loading) {
     return (
@@ -55,13 +67,35 @@ export default function LecturesPage() {
   return (
     <div className="p-8">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Available Lectures</h1>
+        <h1 className="text-3xl font-bold mb-4">Available Lectures</h1>
+        
+        {/* Semester filter buttons */}
+        <div className="mb-8 flex flex-wrap gap-2">
+          <Button
+            variant={selectedSemester === null ? "default" : "outline"}
+            onClick={() => handleSemesterChange(null)}
+          >
+            All Semesters
+          </Button>
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+            <Button
+              key={sem}
+              variant={selectedSemester === sem.toString() ? "default" : "outline"}
+              onClick={() => handleSemesterChange(sem.toString())}
+            >
+              Semester {sem}
+            </Button>
+          ))}
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {lectures.map((lecture) => (
             <Card key={lecture._id} className="overflow-hidden">
               <CardHeader>
                 <CardTitle>{lecture.title}</CardTitle>
+                <div className="text-sm text-muted-foreground">
+                  Semester {lecture.semester}
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <video 
@@ -89,7 +123,9 @@ export default function LecturesPage() {
 
         {lectures.length === 0 && (
           <div className="text-center text-muted-foreground py-12">
-            No lectures available yet.
+            {selectedSemester 
+              ? `No lectures available for Semester ${selectedSemester}.` 
+              : "No lectures available yet."}
           </div>
         )}
       </div>
