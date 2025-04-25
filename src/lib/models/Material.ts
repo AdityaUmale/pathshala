@@ -19,6 +19,12 @@ const materialSchema = new mongoose.Schema({
         enum: ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt', 'other'],
         default: 'other'
     },
+    semester: {
+        type: Number,
+        required: true,
+        min: 1,
+        max: 8
+    },
     size: {
         type: Number,
         required: false

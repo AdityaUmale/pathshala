@@ -35,9 +35,11 @@ export default function AdminPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [video, setVideo] = useState<File | null>(null);
+  // Add the materialSemester state variable with the other state declarations
   const [materialTitle, setMaterialTitle] = useState("");
   const [materialDescription, setMaterialDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [materialSemester, setMaterialSemester] = useState("1"); // Add this line
   const [announcementTitle, setAnnouncementTitle] = useState("");
   const [announcementDescription, setAnnouncementDescription] = useState("");
   const [isImportant, setIsImportant] = useState(false);
@@ -141,12 +143,18 @@ export default function AdminPage() {
   const handleMaterialSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Convert materialSemester to a number to ensure it's stored correctly
+    const semesterNumber = parseInt(materialSemester);
+    
     const formData = new FormData();
     formData.append("title", materialTitle);
     formData.append("description", materialDescription);
+    formData.append("semester", semesterNumber.toString()); // Ensure it's a string for FormData
     if (file) {
       formData.append("file", file);
     }
+
+    console.log("Submitting material with semester:", semesterNumber); // Add this for debugging
 
     try {
       const response = await fetch("/api/material", {
@@ -155,18 +163,23 @@ export default function AdminPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to upload material");
+        const errorData = await response.json();
+        console.error("Server error:", errorData);
+        throw new Error(`Failed to upload material: ${errorData.message || 'Unknown error'}`);
       }
 
       // Reset form
+      // Don't forget to reset the semester when the form is successfully submitted
       setMaterialTitle("");
       setMaterialDescription("");
       setFile(null);
+      setMaterialSemester("1"); // Reset semester
       
-      // You can add a success notification here
+      // Add success notification
+      toast.success("Material uploaded successfully");
     } catch (error) {
       console.error("Upload error:", error);
-      // You can add an error notification here
+      toast.error(error instanceof Error ? error.message : "Failed to upload material");
     }
   };
 
@@ -409,6 +422,7 @@ export default function AdminPage() {
                     />
                   </div>
                   
+                  // In your material upload dialog form
                   <div className="space-y-2">
                     <Label htmlFor="materialDescription">Description</Label>
                     <Textarea
@@ -419,7 +433,25 @@ export default function AdminPage() {
                       required
                     />
                   </div>
-
+                  
+                  {/* Add semester selector */}
+                  <div className="space-y-2">
+                    <Label htmlFor="materialSemester">Semester</Label>
+                    <select
+                      id="materialSemester"
+                      value={materialSemester}
+                      onChange={(e) => setMaterialSemester(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      required
+                    >
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                        <option key={sem} value={sem}>
+                          Semester {sem}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
                   <div className="space-y-2">
                     <Label htmlFor="file">Document</Label>
                     <div className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary/50 transition-colors">

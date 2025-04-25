@@ -13,11 +13,32 @@ export async function POST(req: Request) {
         const title = formData.get("title") as string;
         const description = formData.get("description") as string;
         const file = formData.get("file") as File;
+        const semesterValue = formData.get("semester");
+        
+        // Log all form data for debugging
+        console.log("Form data received:", {
+            title,
+            description,
+            fileName: file?.name,
+            semesterValue,
+            semesterType: typeof semesterValue
+        });
+        
+        // Ensure semester is properly parsed as a number
+        const semester = semesterValue ? parseInt(semesterValue as string) : 1;
         
         if (!title || !file) {
             return NextResponse.json({
                 success: false,
                 message: "Title and file are required"
+            }, { status: 400 });
+        }
+
+        // Validate semester
+        if (isNaN(semester) || semester < 1 || semester > 8) {
+            return NextResponse.json({
+                success: false,
+                message: "Semester must be a number between 1 and 8"
             }, { status: 400 });
         }
 
@@ -42,15 +63,18 @@ export async function POST(req: Request) {
             ? fileExt 
             : 'other';
 
-        // Save material to database
+        // Save material to database with semester field
         const material = await Material.create({
             title,
             description,
             fileUrl: `/uploads/materials/${fileName}`,
             fileType,
+            semester, // Make sure semester is included here
             size: file.size,
-            uploadedBy: "admin", // Replace with actual user ID from auth
+            uploadedBy: "admin",
         });
+
+        console.log("Created material:", material); // Log the created material
 
         return NextResponse.json({
             success: true,
@@ -66,11 +90,26 @@ export async function POST(req: Request) {
     }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
         await connectDB();
         
-        const materials = await Material.find().sort({ createdAt: -1 });
+        // Get semester from query params if it exists
+        const { searchParams } = new URL(request.url);
+        const semester = searchParams.get('semester');
+        
+        // Build query based on whether semester filter is applied
+        let query = {};
+        
+        if (semester) {
+            // Only filter by semester if it's provided
+            query = { semester: parseInt(semester) };
+        }
+        
+        console.log("Material query:", query);
+        
+        const materials = await Material.find(query).sort({ createdAt: -1 });
+        console.log(`Found ${materials.length} materials for query:`, query);
         
         return NextResponse.json({
             success: true,
