@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -58,15 +59,26 @@ export default function AdminPage() {
           if (data.user && data.user.role === 'admin') {
             setIsAuthorized(true);
           } else {
+            // Show toast for non-admin users
+            toast.error("Access Denied", {
+              description: "You don't have permission to access the admin page.",
+            });
             // Redirect non-admin users
             router.replace('/dashboard');
           }
         } else {
+          // Show toast for unauthenticated users
+          toast.error("Authentication Required", {
+            description: "Please sign in to continue.",
+          });
           // Redirect unauthenticated users
           router.replace('/signin');
         }
       } catch (error) {
         console.error('Auth check error:', error);
+        toast.error("Error", {
+          description: "An error occurred while checking your permissions.",
+        });
         router.replace('/signin');
       } finally {
         setIsLoading(false);
