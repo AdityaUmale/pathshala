@@ -11,6 +11,7 @@ import {
   Menu,
   Shield,
   X,
+  MessageSquare, // Add this import for the feedback icon
 } from "lucide-react";
 
 // Placeholder for your actual admin check function
@@ -79,6 +80,12 @@ export default function DashboardPage() {
       label: "Announcements",
       href: "/dashboard/announcements",
       description: "View important updates",
+    },
+    {
+      icon: <MessageSquare className="w-5 h-5" />,
+      label: "Feedback & Doubts",
+      href: "/dashboard/feedback",
+      description: "Submit your feedback and questions",
     },
   ];
 
