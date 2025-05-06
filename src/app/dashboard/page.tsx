@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react"; // Make sure useEffect is imported if you fetch status
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,15 +13,48 @@ import {
   X,
 } from "lucide-react";
 
+// Placeholder for your actual admin check function
+// Actual implementation of admin check function
+async function checkIfUserIsAdmin(): Promise<boolean> {
+  try {
+    // Make an API call to your backend to verify admin status
+    const response = await fetch('/api/auth/me');
+    
+    if (!response.ok) {
+      console.error('Failed to fetch user data');
+      return false; // If API call fails, default to non-admin
+    }
+    
+    const data = await response.json();
+    
+    // Check if user exists and has admin role
+    return data.user && data.user.role === 'admin';
+  } catch (error) {
+    console.error('Error checking admin status:', error);
+    return false; // If any error occurs, default to non-admin
+  }
+}
+
 export default function DashboardPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false); // Initial state
 
-  const menuItems = [
+  useEffect(() => {
+    // Fetch admin status when the component mounts
+    const fetchAdminStatus = async () => {
+      const adminStatus = await checkIfUserIsAdmin();
+      setIsAdmin(adminStatus);
+    };
+    fetchAdminStatus();
+  }, []); // Empty dependency array means this runs once on mount
+
+  const allMenuItems = [
     {
       icon: <Shield className="w-5 h-5" />,
       label: "Admin Access",
       href: "/dashboard/admin",
       description: "Manage users and settings",
+      isAdminOnly: true,
     },
     {
       icon: <FileText className="w-5 h-5" />,
@@ -48,6 +81,8 @@ export default function DashboardPage() {
       description: "View important updates",
     },
   ];
+
+  const menuItems = allMenuItems.filter(item => !item.isAdminOnly || isAdmin);
 
   return (
     <div className="min-h-screen bg-background">
