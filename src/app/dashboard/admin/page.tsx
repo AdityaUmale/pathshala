@@ -18,6 +18,8 @@ import { Upload, Video, FileText, Bell, AlertTriangle, Calendar, CheckCircle, XC
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
+import { MessageSquare } from "lucide-react";
+import Link from "next/link";
 
 // Mock student data (replace with actual data from your database)
 const MOCK_STUDENTS = Array.from({ length: 40 }, (_, i) => ({
@@ -34,23 +36,20 @@ export default function AdminPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [video, setVideo] = useState<File | null>(null);
-  // Add the materialSemester state variable with the other state declarations
+  const [video, setVideo] = useState(null);
   const [materialTitle, setMaterialTitle] = useState("");
   const [materialDescription, setMaterialDescription] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [materialSemester, setMaterialSemester] = useState("1"); // Add this line
+  const [file, setFile] = useState(null);
+  const [materialSemester, setMaterialSemester] = useState("1");
   const [announcementTitle, setAnnouncementTitle] = useState("");
   const [announcementDescription, setAnnouncementDescription] = useState("");
   const [isImportant, setIsImportant] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [attendanceData, setAttendanceData] = useState<Array<{
-    studentId: string;
-    studentName: string;
-    present: boolean;
-  }>>(MOCK_STUDENTS.map(student => ({ ...student, present: false })));
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [attendanceData, setAttendanceData] = useState(
+    MOCK_STUDENTS.map(student => ({ ...student, present: false }))
+  );
   const [attendanceLoaded, setAttendanceLoaded] = useState(false);
-  const [semester, setSemester] = useState("1"); // Add this new state
+  const [semester, setSemester] = useState("1");
   
   // Check if user is admin
   useEffect(() => {
@@ -62,19 +61,15 @@ export default function AdminPage() {
           if (data.user && data.user.role === 'admin') {
             setIsAuthorized(true);
           } else {
-            // Show toast for non-admin users
             toast.error("Access Denied", {
               description: "You don't have permission to access the admin page.",
             });
-            // Redirect non-admin users
             router.replace('/dashboard');
           }
         } else {
-          // Show toast for unauthenticated users
           toast.error("Authentication Required", {
             description: "Please sign in to continue.",
           });
-          // Redirect unauthenticated users
           router.replace('/signin');
         }
       } catch (error) {
@@ -105,13 +100,13 @@ export default function AdminPage() {
     return null;
   }
   
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     const formData = new FormData();
     formData.append("title", title);
     formData.append("description", description);
-    formData.append("semester", semester); // Add semester to form data
+    formData.append("semester", semester);
     if (video) {
       formData.append("video", video);
     }
@@ -126,13 +121,11 @@ export default function AdminPage() {
         throw new Error("Failed to upload lecture");
       }
 
-      // Reset form
       setTitle("");
       setDescription("");
       setVideo(null);
-      setSemester("1"); // Reset semester
+      setSemester("1");
       
-      // Add success notification
       toast.success("Lecture uploaded successfully");
     } catch (error) {
       console.error("Upload error:", error);
@@ -140,21 +133,20 @@ export default function AdminPage() {
     }
   };
 
-  const handleMaterialSubmit = async (e: React.FormEvent) => {
+  const handleMaterialSubmit = async (e) => {
     e.preventDefault();
     
-    // Convert materialSemester to a number to ensure it's stored correctly
     const semesterNumber = parseInt(materialSemester);
     
     const formData = new FormData();
     formData.append("title", materialTitle);
     formData.append("description", materialDescription);
-    formData.append("semester", semesterNumber.toString()); // Ensure it's a string for FormData
+    formData.append("semester", semesterNumber.toString());
     if (file) {
       formData.append("file", file);
     }
 
-    console.log("Submitting material with semester:", semesterNumber); // Add this for debugging
+    console.log("Submitting material with semester:", semesterNumber);
 
     try {
       const response = await fetch("/api/material", {
@@ -168,14 +160,11 @@ export default function AdminPage() {
         throw new Error(`Failed to upload material: ${errorData.message || 'Unknown error'}`);
       }
 
-      // Reset form
-      // Don't forget to reset the semester when the form is successfully submitted
       setMaterialTitle("");
       setMaterialDescription("");
       setFile(null);
-      setMaterialSemester("1"); // Reset semester
+      setMaterialSemester("1");
       
-      // Add success notification
       toast.success("Material uploaded successfully");
     } catch (error) {
       console.error("Upload error:", error);
@@ -183,8 +172,7 @@ export default function AdminPage() {
     }
   };
 
-  // New function to handle announcement submission
-  const handleAnnouncementSubmit = async (e: React.FormEvent) => {
+  const handleAnnouncementSubmit = async (e) => {
     e.preventDefault();
     
     try {
@@ -204,23 +192,19 @@ export default function AdminPage() {
         throw new Error("Failed to create announcement");
       }
 
-      // Reset form
       setAnnouncementTitle("");
       setAnnouncementDescription("");
       setIsImportant(false);
       
-      // You can add a success notification here
     } catch (error) {
       console.error("Announcement error:", error);
-      // You can add an error notification here
     }
   };
 
-  // New function to fetch attendance for a selected date
-  const fetchAttendanceForDate = async (date: Date) => {
+  const fetchAttendanceForDate = async (date) => {
     if (!date) return;
     
-    setIsSubmitting(true); // Use isSubmitting instead of isLoading
+    setIsSubmitting(true);
     try {
       const formattedDate = format(date, "yyyy-MM-dd");
       const response = await fetch(`/api/attendance?date=${formattedDate}`);
@@ -232,33 +216,28 @@ export default function AdminPage() {
       const data = await response.json();
       
       if (data.attendance) {
-        // If attendance exists for this date, load it
         setAttendanceData(data.attendance.students);
       } else {
-        // Otherwise, reset to default (all absent)
         setAttendanceData(MOCK_STUDENTS.map(student => ({ ...student, present: false })));
       }
       
       setAttendanceLoaded(true);
     } catch (error) {
       console.error("Error fetching attendance:", error);
-      // Reset to default
       setAttendanceData(MOCK_STUDENTS.map(student => ({ ...student, present: false })));
     } finally {
-      setIsSubmitting(false); // Use isSubmitting instead of isLoading
+      setIsSubmitting(false);
     }
   };
 
-  // Handle date change in calendar
-  const handleDateSelect = (date: Date | undefined) => {
+  const handleDateSelect = (date) => {
     setSelectedDate(date);
     if (date) {
       fetchAttendanceForDate(date);
     }
   };
 
-  // Toggle attendance for a student
-  const toggleAttendance = (studentId: string) => {
+  const toggleAttendance = (studentId) => {
     setAttendanceData(prev => 
       prev.map(student => 
         student.studentId === studentId 
@@ -268,25 +247,22 @@ export default function AdminPage() {
     );
   };
 
-  // Mark all students present
   const markAllPresent = () => {
     setAttendanceData(prev => 
       prev.map(student => ({ ...student, present: true }))
     );
   };
 
-  // Mark all students absent
   const markAllAbsent = () => {
     setAttendanceData(prev => 
       prev.map(student => ({ ...student, present: false }))
     );
   };
 
-  // Submit attendance
   const submitAttendance = async () => {
     if (!selectedDate) return;
     
-    setIsSubmitting(true); // Use isSubmitting instead of isLoading
+    setIsSubmitting(true);
     try {
       const response = await fetch("/api/attendance", {
         method: "POST",
@@ -303,12 +279,10 @@ export default function AdminPage() {
         throw new Error("Failed to submit attendance");
       }
       
-      // Success notification could be added here
     } catch (error) {
       console.error("Error submitting attendance:", error);
-      // Error notification could be added here
     } finally {
-      setIsSubmitting(false); // Use isSubmitting instead of isLoading
+      setIsSubmitting(false);
     }
   };
 
@@ -352,7 +326,6 @@ export default function AdminPage() {
                     />
                   </div>
                   
-                  {/* Add semester selector */}
                   <div className="space-y-2">
                     <Label htmlFor="semester">Semester</Label>
                     <select
@@ -422,7 +395,7 @@ export default function AdminPage() {
                     />
                   </div>
                   
-                  // In your material upload dialog form
+                  {/* In your material upload dialog form */}
                   <div className="space-y-2">
                     <Label htmlFor="materialDescription">Description</Label>
                     <Textarea
@@ -434,7 +407,6 @@ export default function AdminPage() {
                     />
                   </div>
                   
-                  {/* Add semester selector */}
                   <div className="space-y-2">
                     <Label htmlFor="materialSemester">Semester</Label>
                     <select
@@ -540,7 +512,6 @@ export default function AdminPage() {
               </DialogContent>
             </Dialog>
 
-            {/* New attendance button */}
             <Dialog>
               <DialogTrigger asChild>
                 <Button className="bg-green-600 hover:bg-green-700 text-white">
@@ -584,7 +555,7 @@ export default function AdminPage() {
                   </div>
                   <div className="max-h-[400px] overflow-y-auto pr-2">
                     <Label className="mb-2 block">Students</Label>
-                    {isLoading ? (
+                    {isSubmitting ? (
                       <div className="flex justify-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                       </div>
@@ -622,6 +593,22 @@ export default function AdminPage() {
             </Dialog>
           </div>
         </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <Link href="/dashboard/admin/feedback" className="p-6 rounded-xl bg-card hover:bg-accent/10 border border-border transition-colors">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-primary/10 text-primary">
+              <MessageSquare className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold">Manage Feedback</h3>
+              <p className="text-sm text-muted-foreground">
+                View and respond to user feedback and questions
+              </p>
+            </div>
+          </div>
+        </Link>
       </div>
     </div>
   );

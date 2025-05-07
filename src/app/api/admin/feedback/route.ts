@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import Feedback from "@/lib/models/Feedback";
 import { getCurrentUser } from "@/lib/auth";
+import mongoose from "mongoose";
 
 // Get all feedback for admin
 export async function GET() {
@@ -49,18 +50,18 @@ export async function GET() {
 // Helper function to check if user is admin
 async function checkIfUserIsAdmin(): Promise<boolean> {
   try {
-    // Make an API call to your backend to verify admin status
-    const response = await fetch('/api/auth/me');
+    // Get the current user ID from the session/token
+    const userId = await getCurrentUser();
+    if (!userId) return false;
     
-    if (!response.ok) {
-      return false;
-    }
-    
-    const data = await response.json();
+    // Fetch the user from the database to check their role
+    const User = mongoose.models.User || mongoose.model('User', UserSchema);
+    const user = await User.findById(userId);
     
     // Check if user exists and has admin role
-    return data.user && data.user.role === 'admin';
+    return user && user.role === 'admin';
   } catch (error) {
+    console.error("Error checking admin status:", error);
     return false;
   }
 }
