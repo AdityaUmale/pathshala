@@ -132,7 +132,7 @@ export default function LandingPage() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
             >
-              Pathshala
+              CC Pathshala
             </motion.span>
           </div>
           <nav className="hidden md:flex gap-6">
@@ -202,7 +202,7 @@ export default function LandingPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4, duration: 0.7 }}
                   >
-                    Transform Education with Pathshala
+                    Transform Education with CC Pathshala
                   </motion.h1>
                   <motion.p
                     className="max-w-[600px] text-muted-foreground md:text-xl"
@@ -312,7 +312,7 @@ export default function LandingPage() {
                     src="/images/hi.webp"
                     width={800}
                     height={550}
-                    alt="Pathshala Platform Screenshot"
+                    alt="CC Pathshala Platform Screenshot"
                     className="mx-auto w-full h-auto rounded-3xl object-contain sm:w-full lg:order-last shadow-2xl shadow-blue-500/10 border border-blue-500/10"
                     priority
                   />
@@ -375,7 +375,7 @@ export default function LandingPage() {
                     Everything You Need for Online Learning
                   </h2>
                   <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                    Pathshala provides powerful tools for both educators and students to create an effective learning
+                    CC Pathshala provides powerful tools for both educators and students to create an effective learning
                     environment.
                   </p>
                 </div>
@@ -498,7 +498,7 @@ export default function LandingPage() {
                     Simple for Staff, Seamless for Students
                   </h2>
                   <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                    Pathshala is designed to make online education accessible and effective for everyone.
+                    CC Pathshala is designed to make online education accessible and effective for everyone.
                   </p>
                 </div>
               </div>
@@ -682,7 +682,7 @@ export default function LandingPage() {
                       Ready to Transform Your Educational Experience?
                     </h2>
                     <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                      Join thousands of educators and students already using Pathshala. It's completely free!
+                      Join thousands of educators and students already using CC Pathshala. It's completely free!
                     </p>
                   </div>
                   <motion.div
@@ -854,7 +854,7 @@ export default function LandingPage() {
                 <GraduationCap className="h-6 w-6 text-white" />
               </div>
               <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-cyan-500">
-                Pathshala
+                CC Pathshala
               </span>
             </motion.div>
             <motion.p
@@ -986,7 +986,7 @@ export default function LandingPage() {
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
             >
-              © {new Date().getFullYear()} Pathshala. All rights reserved.
+              © {new Date().getFullYear()} CC Pathshala. All rights reserved.
             </motion.p>
             <motion.p
               className="text-center text-sm text-muted-foreground"
