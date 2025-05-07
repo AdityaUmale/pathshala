@@ -4,8 +4,12 @@ import { useState, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, UserCheck, UserX } from "lucide-react";
+import { Calendar as CalendarIcon, UserCheck, UserX, RefreshCw, CheckCircle, XCircle } from "lucide-react";
+import { toast } from "sonner";
 
 interface Student {
   studentId: string;
@@ -26,6 +30,9 @@ export default function AttendancePage() {
   const [attendance, setAttendance] = useState<AttendanceRecord | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [attendanceData, setAttendanceData] = useState<Student[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Calculate attendance statistics
   const presentCount = attendance?.students.filter(s => s.present).length || 0;
@@ -33,6 +40,25 @@ export default function AttendancePage() {
   const attendancePercentage = attendance?.students.length 
     ? Math.round((presentCount / attendance.students.length) * 100) 
     : 0;
+
+  // Check if user is admin
+  useEffect(() => {
+    async function checkAdmin() {
+      try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.user && data.user.role === 'admin') {
+            setIsAdmin(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+      }
+    }
+    
+    checkAdmin();
+  }, []);
 
   useEffect(() => {
     if (selectedDate) {
@@ -54,11 +80,110 @@ export default function AttendancePage() {
       
       const data = await response.json();
       setAttendance(data.attendance);
+      
+      // Set attendance data for marking form
+      if (data.attendance) {
+        setAttendanceData(data.attendance.students);
+      } else {
+        setAttendanceData([]);
+      }
     } catch (err) {
       console.error(err);
       setError("Failed to load attendance data");
     } finally {
       setLoading(false);
+    }
+  };
+  
+  // Function to refresh student list from database
+  const refreshStudentList = async () => {
+    if (!selectedDate) return;
+    
+    setLoading(true);
+    try {
+      const formattedDate = format(selectedDate, "yyyy-MM-dd");
+      const response = await fetch(`/api/attendance`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          date: formattedDate,
+          // Not sending students will trigger fetching from database
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to refresh student list");
+      }
+      
+      const data = await response.json();
+      setAttendance(data.attendance);
+      setAttendanceData(data.attendance.students);
+      toast.success("Student list refreshed from database");
+    } catch (err) {
+      console.error(err);
+      setError("Failed to refresh student list");
+      toast.error("Failed to refresh student list");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Toggle attendance for a student
+  const toggleAttendance = (studentId: string) => {
+    setAttendanceData(prev => 
+      prev.map(student => 
+        student.studentId === studentId 
+          ? { ...student, present: !student.present } 
+          : student
+      )
+    );
+  };
+
+  // Mark all students present
+  const markAllPresent = () => {
+    setAttendanceData(prev => 
+      prev.map(student => ({ ...student, present: true }))
+    );
+  };
+
+  // Mark all students absent
+  const markAllAbsent = () => {
+    setAttendanceData(prev => 
+      prev.map(student => ({ ...student, present: false }))
+    );
+  };
+
+  // Submit attendance
+  const submitAttendance = async () => {
+    if (!selectedDate) return;
+    
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/attendance", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          date: selectedDate,
+          students: attendanceData,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to submit attendance");
+      }
+      
+      const data = await response.json();
+      setAttendance(data.attendance);
+      toast.success("Attendance saved successfully");
+    } catch (error) {
+      console.error("Error submitting attendance:", error);
+      toast.error("Failed to save attendance");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -73,8 +198,113 @@ export default function AttendancePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Select Date</CardTitle>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={refreshStudentList}
+                    disabled={loading}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh Students
+                  </Button>
+                  
+                  {isAdmin && (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                          disabled={loading}
+                        >
+                          <UserCheck className="h-4 w-4 mr-2" />
+                          Mark Attendance
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[700px]">
+                        <DialogHeader>
+                          <DialogTitle>Mark Student Attendance</DialogTitle>
+                        </DialogHeader>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                          <div>
+                            <Calendar
+                              mode="single"
+                              selected={selectedDate}
+                              onSelect={setSelectedDate}
+                              className="border rounded-md"
+                            />
+                            <div className="mt-4 space-y-2">
+                              <Button 
+                                type="button" 
+                                variant="outline" 
+                                className="w-full" 
+                                onClick={markAllPresent}
+                              >
+                                <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+                                Mark All Present
+                              </Button>
+                              <Button 
+                                type="button" 
+                                variant="outline" 
+                                className="w-full" 
+                                onClick={markAllAbsent}
+                              >
+                                <XCircle className="w-4 h-4 mr-2 text-red-500" />
+                                Mark All Absent
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="max-h-[400px] overflow-y-auto pr-2">
+                            <div className="mb-2 flex justify-between items-center">
+                              <span className="font-medium">Students</span>
+                              <span className="text-xs text-muted-foreground">
+                                {attendanceData.filter(s => s.present).length} / {attendanceData.length} Present
+                              </span>
+                            </div>
+                            {isSubmitting ? (
+                              <div className="flex justify-center py-8">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                              </div>
+                            ) : attendanceData.length === 0 ? (
+                              <div className="text-center py-8 text-muted-foreground">
+                                No students found. Click "Refresh Students" to load from database.
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                {attendanceData.map((student) => (
+                                  <div 
+                                    key={student.studentId} 
+                                    className="flex items-center justify-between p-2 border rounded-md"
+                                  >
+                                    <span>{student.studentName}</span>
+                                    <div className="flex items-center">
+                                      <span className={`mr-2 text-sm ${student.present ? 'text-green-500' : 'text-red-500'}`}>
+                                        {student.present ? 'Present' : 'Absent'}
+                                      </span>
+                                      <Checkbox 
+                                        checked={student.present}
+                                        onCheckedChange={() => toggleAttendance(student.studentId)}
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <Button 
+                          className="w-full mt-6 bg-green-600 hover:bg-green-700"
+                          onClick={submitAttendance}
+                          disabled={isSubmitting || attendanceData.length === 0}
+                        >
+                          {isSubmitting ? 'Saving...' : 'Save Attendance'}
+                        </Button>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 <Calendar
